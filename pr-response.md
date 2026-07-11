@@ -1,5 +1,8 @@
 # PR Response Doc — CineLog Watchlist Feature
 
+![Clean commit history](Oneline-Log-Screenshot-Cinelog.png)
+
+
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
 
