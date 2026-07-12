@@ -6,6 +6,16 @@
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
 
+## AI Usage
+I used an AI assistant (Claude via You.com) throughout this project for:
+
+- **Git guidance:** Walking through the interactive rebase to squash duplicate commits and reword non-conventional messages, and recovering safely when a stale rebase state appeared (using backup branches and `git rebase --abort`).
+
+- **Commit-format verification:** I gave my `git log --oneline` to the AI to check conventional-commit compliance, then verified the result myself against the conventional-commits spec.
+
+- **Design-decision stress-testing (Comments 4 & 5):** I drafted my own reasoning for the visibility default and sort order. For sort order, the AI initially helped articulate a "newest-first" argument. I then verified against the actual collection service (`CollectionEntry.date_added.desc()`) and confirmed my code matched, ultimately changing my watchlist query to `.date_added.desc()` for genuine consistency. That was a decision grounded in the codebase, not just the AI's suggestion.
+
+
 ## Comment 1 — Rename
 **What I did:** 
 Renamed save_to_watchlist() to add_to_watchlist() in services/watchlist_service.py to match the codebase's existing add_to_collection() naming convention. Updated both references in routes/watchlist/watchlist.py; the import on line 8 and the call site on line 32.
@@ -106,3 +116,26 @@ curl -X POST http://127.0.0.1:5000/watchlist/<user_id>/add \
 
 ## PR Description
 <!-- Written at the end — feature overview, design decisions, manual testing steps -->
+
+What This Feature Does
+Adds a watchlist to CineLog, letting users save films to watch later. It introduces the WatchlistEntry model plus endpoints to add films to and view a user's watchlist. Adding a film already on the list is rejected (deduplication), and each entry can be
+marked public or private. A remove_from_watchlist service function (with unit tests) supports removal at the service layer.
+
+Design Decisions
+Visibility default: New entries default to public=True, matching the WatchlistEntry.public model default. This preserves backward compatibility, so callers that omit the field are unaffected.
+Sort order: The watchlist is sorted newest-added-first via .order_by(WatchlistEntry.date_added.desc()), matching the collection service's ordering so users learn one consistent model across both features.
+
+How to Manually Test
+
+Start the app: flask run (runs at http://127.0.0.1:5000).
+View a user's watchlist (initially empty):
+curl http://127.0.0.1:5000/watchlist/<user_id>
+Add a film (public by default):
+curl -X POST http://127.0.0.1:5000/watchlist/<user_id>/add -H "Content-Type: application/json" -d '{"film_id": "<film_uuid>"}'
+→ expect HTTP 201 and the created entry.
+View the watchlist again; confirm the film appears.
+Add the same film again → expect it to be rejected as a duplicate.
+Add a film as private:
+curl -X POST http://127.0.0.1:5000/watchlist/<user_id>/add -H "Content-Type: application/json" -d '{"film_id": "<film_uuid>", "public": false}'
+→ confirm the entry's "public" field is false.
+Omit "film_id" → expect HTTP 400 "film_id is required".
